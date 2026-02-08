@@ -18,6 +18,7 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<ContactsExpanded[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -28,6 +29,14 @@ export default function ContactsPage() {
   useEffect(() => {
     if (user) {
       loadContacts();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem(`crm:view:contacts:${user.id}`);
+    if (stored === 'card' || stored === 'table') {
+      setViewMode(stored);
     }
   }, [user]);
 
@@ -58,11 +67,18 @@ export default function ContactsPage() {
   }
 
   const filteredContacts = contacts.filter((contact) =>
-    contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contact.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    contact.job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.position?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contact.expand?.institution_relation?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleViewModeChange = (mode: 'card' | 'table') => {
+    setViewMode(mode);
+    if (user) {
+      localStorage.setItem(`crm:view:contacts:${user.id}`, mode);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,10 +89,26 @@ export default function ContactsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
             <p className="text-gray-600 mt-2">Manage your contacts and decision makers</p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Contact
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleViewModeChange('table')}
+            >
+              Table
+            </Button>
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleViewModeChange('card')}
+            >
+              Cards
+            </Button>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Contact
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -117,6 +149,43 @@ export default function ContactsPage() {
               )}
             </CardContent>
           </Card>
+        ) : viewMode === 'table' ? (
+          <div className="overflow-x-auto rounded-lg border bg-white">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Contact</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Institution</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Job Title</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Email</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Phone</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Primary</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredContacts.map((contact) => (
+                  <tr key={contact.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{contact.name}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {contact.expand?.institution_relation?.name || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{contact.position || '-'}</td>
+                    <td className="px-4 py-3 text-gray-700">{contact.email || '-'}</td>
+                    <td className="px-4 py-3 text-gray-700">{contact.phone || '-'}</td>
+                    <td className="px-4 py-3">
+                      {contact.is_primary ? (
+                        <Badge variant="outline" className="text-xs">Yes</Badge>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredContacts.map((contact) => (
@@ -128,8 +197,8 @@ export default function ContactsPage() {
                       {contact.is_primary && (
                         <Badge variant="outline" className="text-xs mb-2">Primary Contact</Badge>
                       )}
-                      {contact.job_title && (
-                        <p className="text-sm text-gray-600 mt-1">{contact.job_title}</p>
+                      {contact.position && (
+                        <p className="text-sm text-gray-600 mt-1">{contact.position}</p>
                       )}
                     </div>
                     <Users className="h-6 w-6 text-indigo-600" />

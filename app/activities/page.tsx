@@ -17,6 +17,7 @@ export default function ActivitiesPage() {
   const [activities, setActivities] = useState<ActivitiesExpanded[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<ActivityType | 'All'>('All');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -29,6 +30,14 @@ export default function ActivitiesPage() {
       loadActivities();
     }
   }, [user, filterType]);
+
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem(`crm:view:activities:${user.id}`);
+    if (stored === 'card' || stored === 'table') {
+      setViewMode(stored);
+    }
+  }, [user]);
 
   const loadActivities = async () => {
     try {
@@ -85,6 +94,13 @@ export default function ActivitiesPage() {
     return colors[type] || colors.Other;
   };
 
+  const handleViewModeChange = (mode: 'card' | 'table') => {
+    setViewMode(mode);
+    if (user) {
+      localStorage.setItem(`crm:view:activities:${user.id}`, mode);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
@@ -94,10 +110,26 @@ export default function ActivitiesPage() {
             <h1 className="text-3xl font-bold text-gray-900">Activities</h1>
             <p className="text-gray-600 mt-2">Track your CRM activities and interactions</p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Log Activity
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleViewModeChange('table')}
+            >
+              Table
+            </Button>
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleViewModeChange('card')}
+            >
+              Cards
+            </Button>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Log Activity
+            </Button>
+          </div>
         </div>
 
         {/* Filter */}
@@ -136,6 +168,63 @@ export default function ActivitiesPage() {
               </Button>
             </CardContent>
           </Card>
+        ) : viewMode === 'table' ? (
+          <div className="overflow-x-auto rounded-lg border bg-white">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Type</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Summary</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Contact</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Logged By</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Next Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {activities.map((activity) => {
+                  const activityType = activity.type || 'Call';
+                  const dateLabel = activity.date_contacted
+                    ? new Date(activity.date_contacted).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : '-';
+                  const nextAction = activity.next_action_date
+                    ? new Date(activity.next_action_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : '-';
+                  return (
+                    <tr key={activity.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-700">{dateLabel}</td>
+                      <td className="px-4 py-3">
+                        <Badge className={getActivityColor(activityType)}>{activityType}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">
+                          {activity.summary || activity.outcome || 'Activity'}
+                        </div>
+                        {activity.details && (
+                          <div className="text-gray-500">{activity.details}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {activity.expand?.contact?.name || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {activity.expand?.pic?.name || activity.expand?.pic?.email || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{nextAction}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="space-y-4">
             {activities.map((activity) => {
@@ -168,11 +257,9 @@ export default function ActivitiesPage() {
                             </span>
                           )}
                         </div>
-                        
                         {activity.details && (
                           <p className="text-gray-700 mb-3">{activity.details}</p>
                         )}
-                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                           {activity.expand?.contact && (
                             <div>
@@ -187,7 +274,6 @@ export default function ActivitiesPage() {
                             </div>
                           )}
                         </div>
-                        
                         {activity.next_action_date && (
                           <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-md p-3">
                             <p className="text-sm text-yellow-800">
