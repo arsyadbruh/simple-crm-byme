@@ -66,16 +66,27 @@ export default function DashboardPage() {
       const currentYear = now.getFullYear();
 
       // Fetch global target for current month
-      const globalTargetFilter = `year = ${currentYear} && month = ${currentMonth}`;
-      const globalTargets = await pb.collection(Collections.GlobalTargets).getList<GlobalTargetsRecord>(1, 1, {
-        filter: globalTargetFilter,
-      });
-      const globalTarget = globalTargets.items[0]?.target_revenue || 0;
+      let globalTarget = 0;
+      try {
+        const globalTargetFilter = `year=${currentYear} && month=${currentMonth}`;
+        const globalTargets = await pb.collection(Collections.GlobalTargets).getList<GlobalTargetsRecord>(1, 1, {
+          filter: globalTargetFilter,
+        });
+        globalTarget = globalTargets.items[0]?.target_revenue || 0;
+      } catch (error) {
+        console.warn('Failed to fetch global target:', error);
+      }
 
       // Fetch all forecasts with expand
-      const forecasts = await pb.collection(Collections.Forecasts).getFullList<ForecastsExpanded>({
-        expand: 'target_program',
-      });
+      let forecasts: ForecastsExpanded[] = [];
+      try {
+        forecasts = await pb.collection(Collections.Forecasts).getFullList<ForecastsExpanded>({
+          expand: 'target_program',
+        });
+      } catch (error) {
+        console.error('Failed to fetch forecasts:', error);
+        // Continue with empty forecasts array
+      }
 
       // Calculate total forecast (Cold + Warm + Hot + Closing)
       const totalForecast = forecasts
@@ -91,8 +102,13 @@ export default function DashboardPage() {
       const forecastCount = forecasts.filter(f => f.status !== 'Cancel').length;
 
       // Count institutions
-      const institutions = await pb.collection(Collections.Institutions).getList(1, 1);
-      const institutionCount = institutions.totalItems;
+      let institutionCount = 0;
+      try {
+        const institutions = await pb.collection(Collections.Institutions).getList(1, 1);
+        institutionCount = institutions.totalItems;
+      } catch (error) {
+        console.warn('Failed to fetch institution count:', error);
+      }
 
       setMetrics({
         globalTarget,
@@ -111,11 +127,16 @@ export default function DashboardPage() {
         const monthStr = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
         // Get target for this month
-        const targetFilter = `year = ${year} && month = ${month}`;
-        const targets = await pb.collection(Collections.GlobalTargets).getList<GlobalTargetsRecord>(1, 1, {
-          filter: targetFilter,
-        });
-        const target = targets.items[0]?.target_revenue || 0;
+        let target = 0;
+        try {
+          const targetFilter = `year=${year} && month=${month}`;
+          const targets = await pb.collection(Collections.GlobalTargets).getList<GlobalTargetsRecord>(1, 1, {
+            filter: targetFilter,
+          });
+          target = targets.items[0]?.target_revenue || 0;
+        } catch (error) {
+          console.warn(`Failed to fetch target for ${monthStr}:`, error);
+        }
 
         // Get actual revenue for this month
         const monthForecasts = forecasts.filter(f => {

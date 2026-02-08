@@ -10,6 +10,9 @@ import {
   Users, 
   HandshakeIcon,
   Target,
+  Layers,
+  ListTree,
+  Package,
   LogOut,
   Menu,
   X
@@ -19,6 +22,9 @@ import { useState } from 'react';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Forecasts', href: '/forecasts', icon: Target },
+  { name: 'Programs', href: '/programs', icon: Layers },
+  { name: 'Sub Programs', href: '/sub-programs', icon: ListTree },
+  { name: 'Products', href: '/products', icon: Package },
   { name: 'Institutions', href: '/institutions', icon: Building2 },
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Activities', href: '/activities', icon: HandshakeIcon },
@@ -64,9 +70,7 @@ export function Navigation() {
           <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
             <div className="text-sm text-gray-700">
               <span className="font-medium">{user.name || user.email}</span>
-              {user.role && (
-                <span className="ml-2 text-gray-500">({user.role})</span>
-              )}
+              
             </div>
             <Button variant="ghost" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4 mr-2" />
@@ -111,7 +115,7 @@ export function Navigation() {
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="px-4 space-y-1">
               <div className="text-base font-medium text-gray-800">{user.name || user.email}</div>
-              {user.role && <div className="text-sm text-gray-500">{user.role}</div>}
+              
             </div>
             <div className="mt-3 px-2">
               <Button variant="ghost" className="w-full justify-start" onClick={logout}>
