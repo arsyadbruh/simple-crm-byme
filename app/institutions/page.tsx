@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Building2, Search, MapPin, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Building2, Search, MapPin, Eye, Pencil, Trash2, FileUp } from 'lucide-react';
+import { InstitutionBulkImportDialog } from '@/components/institution-bulk-import-dialog';
 
 export default function InstitutionsPage() {
   const { user, isLoading } = useAuth();
@@ -18,6 +19,7 @@ export default function InstitutionsPage() {
   const [institutions, setInstitutions] = useState<InstitutionsRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -92,10 +94,16 @@ export default function InstitutionsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Institutions</h1>
             <p className="text-gray-600 mt-2">Manage your target accounts and customers</p>
           </div>
-          <Button onClick={() => router.push('/institutions/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Institution
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <FileUp className="h-4 w-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button onClick={() => router.push('/institutions/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Institution
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -201,6 +209,14 @@ export default function InstitutionsPage() {
           </div>
         )}
       </main>
+      <InstitutionBulkImportDialog
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImported={() => {
+          loadInstitutions();
+          setIsImportOpen(false);
+        }}
+      />
     </div>
   );
 }
