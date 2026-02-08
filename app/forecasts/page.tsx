@@ -105,17 +105,17 @@ export default function ForecastsPage() {
   };
 
   const getStatusColor = (status: ForecastStatus) => {
-    const colors = {
-      Planning: 'bg-gray-100 text-gray-800',
-      Approaching: 'bg-blue-100 text-blue-800',
-      Negotiation: 'bg-yellow-100 text-yellow-800',
-      'Closed Won': 'bg-green-100 text-green-800',
-      'Closed Lost': 'bg-red-100 text-red-800',
+    const colors: Record<ForecastStatus, string> = {
+      Cold: 'bg-gray-100 text-gray-800',
+      Warm: 'bg-blue-100 text-blue-800',
+      Hot: 'bg-yellow-100 text-yellow-800',
+      Closing: 'bg-green-100 text-green-800',
+      Cancel: 'bg-red-100 text-red-800',
     };
     return colors[status];
   };
 
-  const statuses: (ForecastStatus | 'All')[] = ['All', 'Planning', 'Approaching', 'Negotiation', 'Closed Won', 'Closed Lost'];
+  const statuses: (ForecastStatus | 'All')[] = ['All', 'Cold', 'Warm', 'Hot', 'Closing', 'Cancel'];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -177,10 +177,10 @@ export default function ForecastsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {forecast.project_title}
+                          {forecast.target_proposal || '(No Title)'}
                         </h3>
-                        <Badge className={getStatusColor(forecast.status)}>
-                          {forecast.status}
+                        <Badge className={getStatusColor(forecast.status || 'Cold')}>
+                          {forecast.status || 'Cold'}
                         </Badge>
                       </div>
                       
@@ -188,13 +188,13 @@ export default function ForecastsPage() {
                         <div>
                           <p className="text-sm text-gray-500">Institution</p>
                           <p className="font-medium">
-                            {forecast.expand?.institution_id?.name || '-'}
+                            {forecast.expand?.institution?.name || '-'}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Program</p>
                           <p className="font-medium">
-                            {forecast.expand?.program_id?.name || '-'}
+                            {forecast.expand?.target_program?.name || '-'}
                           </p>
                         </div>
                         <div>
@@ -204,30 +204,12 @@ export default function ForecastsPage() {
                         <div>
                           <p className="text-sm text-gray-500">Target Amount</p>
                           <p className="font-medium text-blue-600">
-                            {formatCurrency(forecast.target_amount)}
+                            {formatCurrency(forecast.target_omset || 0)}
                           </p>
                         </div>
                       </div>
 
-                      {forecast.sub_program_id && (
-                        <div className="mt-3">
-                          <p className="text-sm text-gray-500">Sub Program</p>
-                          <p className="text-sm font-medium">
-                            {forecast.expand?.sub_program_id?.name || '-'}
-                          </p>
-                        </div>
-                      )}
-
-                      {forecast.product_id && (
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-500">Product</p>
-                          <p className="text-sm font-medium">
-                            {forecast.expand?.product_id?.name || '-'}
-                          </p>
-                        </div>
-                      )}
-
-                      {forecast.status === 'Closed Won' && forecast.fix_omset && (
+                      {forecast.fix_omset && (
                         <div className="mt-3 bg-green-50 p-3 rounded-md">
                           <p className="text-sm text-green-700">
                             <span className="font-semibold">Actual Revenue:</span>{' '}
@@ -250,7 +232,7 @@ export default function ForecastsPage() {
                       >
                         Edit
                       </Button>
-                      {forecast.status !== 'Closed Won' && forecast.status !== 'Closed Lost' && (
+                      {forecast.status && !['Closing', 'Cancel'].includes(forecast.status) && (
                         <Button
                           variant="default"
                           size="sm"

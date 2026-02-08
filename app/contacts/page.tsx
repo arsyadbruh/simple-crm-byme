@@ -35,7 +35,7 @@ export default function ContactsPage() {
     try {
       setLoading(true);
       const records = await pb.collection(Collections.Contacts).getFullList<ContactsExpanded>({
-        expand: 'institution_id',
+        expand: 'institution_relation',
         sort: '-created',
       });
       setContacts(records);
@@ -61,7 +61,7 @@ export default function ContactsPage() {
     contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contact.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contact.job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    contact.expand?.institution_id?.name.toLowerCase().includes(searchQuery.toLowerCase())
+    contact.expand?.institution_relation?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -150,12 +150,12 @@ export default function ContactsPage() {
                       </div>
                     )}
                   </div>
-                  {contact.expand?.institution_id && (
+                  {contact.expand?.institution_relation && (
                     <div className="pt-3 border-t">
                       <div className="flex items-center text-sm">
                         <Building2 className="h-4 w-4 mr-2 text-gray-500" />
                         <span className="text-gray-700 font-medium">
-                          {contact.expand.institution_id.name}
+                          {contact.expand.institution_relation.name}
                         </span>
                       </div>
                     </div>

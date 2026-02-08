@@ -67,7 +67,7 @@ export default function InstitutionsPage() {
   };
 
   const filteredInstitutions = institutions.filter((inst) =>
-    inst.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    inst.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     inst.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     inst.type?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -156,19 +156,6 @@ export default function InstitutionsPage() {
                         <div className="flex items-center text-gray-600">
                           <MapPin className="h-4 w-4 mr-2" />
                           {institution.city}
-                          {institution.province && `, ${institution.province}`}
-                        </div>
-                      )}
-                      {institution.phone && (
-                        <div className="flex items-center text-gray-600">
-                          <Phone className="h-4 w-4 mr-2" />
-                          {institution.phone}
-                        </div>
-                      )}
-                      {institution.email && (
-                        <div className="flex items-center text-gray-600">
-                          <Mail className="h-4 w-4 mr-2" />
-                          {institution.email}
                         </div>
                       )}
                     </div>

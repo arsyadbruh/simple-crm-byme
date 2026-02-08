@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import pb, { Collections } from '@/lib/pocketbase';
-import type { ForecastsRecord, GlobalTargetsRecord } from '@/lib/pocketbase-types';
+import type { ForecastsExpanded, GlobalTargetsRecord } from '@/lib/pocketbase-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, TrendingUp, TrendingDown, DollarSign, Building2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
@@ -72,23 +72,23 @@ export default function DashboardPage() {
       });
       const globalTarget = globalTargets.items[0]?.target_revenue || 0;
 
-      // Fetch all forecasts
-      const forecasts = await pb.collection(Collections.Forecasts).getFullList<ForecastsRecord>({
-        expand: 'program_id',
+      // Fetch all forecasts with expand
+      const forecasts = await pb.collection(Collections.Forecasts).getFullList<ForecastsExpanded>({
+        expand: 'target_program',
       });
 
-      // Calculate total forecast (Planning + Approaching + Negotiation)
+      // Calculate total forecast (Cold + Warm + Hot + Closing)
       const totalForecast = forecasts
-        .filter(f => ['Planning', 'Approaching', 'Negotiation'].includes(f.status))
-        .reduce((sum, f) => sum + (f.target_amount || 0), 0);
+        .filter(f => f.status && ['Cold', 'Warm', 'Hot', 'Closing'].includes(f.status))
+        .reduce((sum, f) => sum + (f.target_omset || 0), 0);
 
-      // Calculate realized revenue (Closed Won)
+      // Calculate realized revenue (Closing status with fix_omset)
       const realizedRevenue = forecasts
-        .filter(f => f.status === 'Closed Won')
-        .reduce((sum, f) => sum + (f.fix_omset || f.target_amount || 0), 0);
+        .filter(f => f.status === 'Closing' && f.fix_omset)
+        .reduce((sum, f) => sum + (f.fix_omset || 0), 0);
 
-      // Count active forecasts
-      const forecastCount = forecasts.filter(f => f.status !== 'Closed Lost').length;
+      // Count active forecasts (exclude Cancelled)
+      const forecastCount = forecasts.filter(f => f.status !== 'Cancel').length;
 
       // Count institutions
       const institutions = await pb.collection(Collections.Institutions).getList(1, 1);
@@ -119,11 +119,11 @@ export default function DashboardPage() {
 
         // Get actual revenue for this month
         const monthForecasts = forecasts.filter(f => {
-          if (f.status !== 'Closed Won' || !f.closing_date) return false;
+          if (f.status !== 'Closing' || !f.closing_date || !f.fix_omset) return false;
           const closingDate = new Date(f.closing_date);
           return closingDate.getMonth() + 1 === month && closingDate.getFullYear() === year;
         });
-        const actual = monthForecasts.reduce((sum, f) => sum + (f.fix_omset || f.target_amount || 0), 0);
+        const actual = monthForecasts.reduce((sum, f) => sum + (f.fix_omset || 0), 0);
 
         monthlyChartData.push({ month: monthStr, target, actual });
       }
@@ -132,10 +132,10 @@ export default function DashboardPage() {
       // Prepare program segments (revenue distribution)
       const programMap = new Map<string, number>();
       forecasts
-        .filter(f => f.status === 'Closed Won')
+        .filter(f => f.status === 'Closing' && f.fix_omset)
         .forEach(f => {
-          const programName = (f.expand?.program_id as any)?.name || 'Unknown';
-          const revenue = f.fix_omset || f.target_amount || 0;
+          const programName = f.expand?.target_program?.name || 'Unknown';
+          const revenue = f.fix_omset || 0;
           programMap.set(programName, (programMap.get(programName) || 0) + revenue);
         });
 
@@ -264,7 +264,7 @@ export default function DashboardPage() {
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip
-                        formatter={(value: number) => formatCurrency(value)}
+                        formatter={(value) => formatCurrency(value as number)}
                       />
                       <Legend />
                       <Bar dataKey="target" fill="#6366f1" name="Target" />

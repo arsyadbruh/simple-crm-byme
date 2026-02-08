@@ -1,6 +1,6 @@
 /**
  * PocketBase TypeScript Type Definitions
- * Generated from pb_schema.json
+ * Generated from pb_schema.json (Updated)
  */
 
 export interface BaseRecord {
@@ -11,163 +11,142 @@ export interface BaseRecord {
 
 // ============= Users Collection =============
 export interface UsersRecord extends BaseRecord {
-  username: string;
+  username?: string;
   email: string;
-  emailVisibility: boolean;
-  verified: boolean;
+  emailVisibility?: boolean;
+  verified?: boolean;
   name?: string;
   avatar?: string;
-  role?: 'Admin' | 'Manager' | 'Sales Rep';
   job_title?: string;
 }
 
-// ============= Programs Collection (Level 1) =============
+// ============= Programs Collection =============
 export interface ProgramsRecord extends BaseRecord {
-  name: string;
   code?: string;
+  name?: string;
   description?: string;
-  is_active?: boolean;
+  segments?: ('CSR' | 'Yayasan' | 'Pemerintah' | 'Sekolah' | 'Other')[];
 }
 
-// ============= Sub Programs Collection (Level 2) =============
+// ============= Sub Programs Collection =============
 export interface SubProgramsRecord extends BaseRecord {
-  name: string;
+  name?: string;
   code?: string;
-  program_id: string;
-  description?: string;
-  is_active?: boolean;
+  program_relation?: string; // Relation to programs
 }
 
 export interface SubProgramsExpanded extends SubProgramsRecord {
   expand?: {
-    program_id: ProgramsRecord;
+    program_relation?: ProgramsRecord;
   };
 }
 
-// ============= Products Collection (Level 3) =============
+// ============= Products Collection =============
 export interface ProductsRecord extends BaseRecord {
-  name: string;
+  name?: string;
   code?: string;
-  sub_program_id: string;
-  price?: number;
-  unit?: string;
   description?: string;
-  is_active?: boolean;
+  program_relation?: string; // Relation to programs (NOT sub_programs)
+  base_price?: number;
 }
 
 export interface ProductsExpanded extends ProductsRecord {
   expand?: {
-    sub_program_id: SubProgramsExpanded;
+    program_relation?: ProgramsRecord;
   };
 }
 
 // ============= Institutions Collection =============
 export interface InstitutionsRecord extends BaseRecord {
-  name: string;
-  type?: 'School' | 'Foundation' | 'Government' | 'Private' | 'Other';
+  code?: string;
+  national_number?: string;
+  name?: string;
+  type?: 'Yayasan' | 'CSR' | 'Pemerintah' | 'Sekolah' | 'Other';
   status?: 'New' | 'Existing Customer' | 'Blacklist';
-  address?: string;
   city?: string;
-  province?: string;
-  phone?: string;
-  email?: string;
+  address?: string;
   website?: string;
-  notes?: string;
+  first_buy_date?: string;
 }
 
 // ============= Contacts Collection =============
 export interface ContactsRecord extends BaseRecord {
-  institution_id: string;
-  name: string;
-  job_title?: string;
+  name?: string;
+  position?: string;
+  is_primary?: boolean;
   phone?: string;
   email?: string;
-  whatsapp?: string;
-  is_primary?: boolean;
-  notes?: string;
+  status?: 'Active' | 'Non Active';
+  institution_relation?: string; // Relation to institutions
 }
 
 export interface ContactsExpanded extends ContactsRecord {
   expand?: {
-    institution_id: InstitutionsRecord;
+    institution_relation?: InstitutionsRecord;
   };
 }
 
-// ============= Forecasts Collection (The Central Deal Table) =============
-export type ForecastStatus = 
-  | 'Planning' 
-  | 'Approaching' 
-  | 'Negotiation' 
-  | 'Closed Won' 
-  | 'Closed Lost';
+// ============= Forecasts Collection =============
+export type ForecastStatus = 'Cold' | 'Warm' | 'Hot' | 'Closing' | 'Cancel';
+export type TargetMonth = 'Januari' | 'Februari' | 'Maret' | 'April' | 'Mei' | 'Juni' | 'Juli' | 'Agustus' | 'September' | 'Oktober' | 'November' | 'Desember';
+export type TargetWeek = 'Pekan 1' | 'Pekan 2' | 'Pekan 3' | 'Pekan 4' | 'Pekan5';
 
 export interface ForecastsRecord extends BaseRecord {
-  user_id: string;
-  institution_id: string;
-  program_id: string;
-  sub_program_id?: string;
-  product_id?: string;
-  
-  // Deal Info
-  project_title: string;
-  target_month: string; // Format: YYYY-MM
-  target_week?: number; // 1-4
-  target_amount: number;
-  
-  // Closing Info
-  status: ForecastStatus;
-  fix_omset?: number; // Actual revenue when Closed Won
+  target_program: string; // Required relation to programs
+  institution: string; // Required relation to institutions
+  target_year?: string;
+  target_month?: TargetMonth;
+  target_week?: TargetWeek;
+  target_proposal?: string;
+  target_omset?: number;
+  status?: ForecastStatus;
+  fix_omset?: number;
   closing_date?: string;
-  
-  // Probabilities
-  probability?: number; // 0-100
-  
+  pic?: string; // Relation to users
   notes?: string;
 }
 
 export interface ForecastsExpanded extends ForecastsRecord {
   expand?: {
-    user_id: UsersRecord;
-    institution_id: InstitutionsRecord;
-    program_id: ProgramsRecord;
-    sub_program_id: SubProgramsRecord;
-    product_id: ProductsRecord;
+    target_program?: ProgramsRecord;
+    institution?: InstitutionsRecord;
+    pic?: UsersRecord;
   };
 }
 
 // ============= Activities Collection =============
-export type ActivityType = 'Call' | 'Visit' | 'Meeting' | 'Email' | 'WhatsApp' | 'Other';
+export type ActivityType = 'Call' | 'Visit' | 'Meeting' | 'Demo' | 'WhatsApp';
 
 export interface ActivitiesRecord extends BaseRecord {
-  user_id: string;
-  institution_id: string;
-  forecast_id?: string;
-  
-  activity_type: ActivityType;
-  subject: string;
-  description?: string;
-  activity_date: string;
   next_action_date?: string;
-  
-  // Contact person involved
-  contact_id?: string;
+  contact?: string; // Relation to contacts
+  outcome?: string;
+  summary?: string;
+  details?: string;
+  next_action?: string;
+  date_contacted?: string;
+  is_responded?: boolean;
+  type?: ActivityType;
+  link_record?: string;
+  spk_proposal?: string; // File field
+  pic?: string; // Relation to users
+  target_forecast?: string; // Relation to forecasts
 }
 
 export interface ActivitiesExpanded extends ActivitiesRecord {
   expand?: {
-    user_id: UsersRecord;
-    institution_id: InstitutionsRecord;
-    forecast_id: ForecastsRecord;
-    contact_id: ContactsRecord;
+    contact?: ContactsRecord;
+    pic?: UsersRecord;
+    target_forecast?: ForecastsExpanded;
   };
 }
 
 // ============= Global Targets Collection =============
 export interface GlobalTargetsRecord extends BaseRecord {
-  year: number;
-  month: number;
-  target_revenue: number;
-  description?: string;
+  period_year?: string;
+  period_month?: TargetMonth;
+  period_week?: TargetWeek;
+  target_revenue?: number;
 }
 
 // ============= Helper Types =============
@@ -184,18 +163,17 @@ export type Collections =
 
 // Query Parameter Types
 export interface ForecastFilters {
-  user_id?: string;
-  institution_id?: string;
+  pic?: string;
+  institution?: string;
   status?: ForecastStatus;
-  target_month?: string;
-  program_id?: string;
+  target_month?: TargetMonth;
+  target_program?: string;
 }
 
 export interface ActivityFilters {
-  user_id?: string;
-  institution_id?: string;
-  forecast_id?: string;
-  activity_type?: ActivityType;
+  pic?: string;
+  target_forecast?: string;
+  type?: ActivityType;
   from_date?: string;
   to_date?: string;
 }

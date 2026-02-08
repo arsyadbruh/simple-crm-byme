@@ -38,7 +38,7 @@ export default function ActivitiesPage() {
       
       const records = await pb.collection(Collections.Activities).getFullList<ActivitiesExpanded>({
         filter,
-        expand: 'user_id,institution_id,contact_id,forecast_id',
+        expand: 'pic,contact,target_forecast',
         sort: '-activity_date',
       });
       setActivities(records);
@@ -169,23 +169,17 @@ export default function ActivitiesPage() {
                           <p className="text-gray-700 mb-3">{activity.description}</p>
                         )}
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                          {activity.expand?.institution_id && (
-                            <div>
-                              <span className="text-gray-500">Institution:</span>
-                              <p className="font-medium">{activity.expand.institution_id.name}</p>
-                            </div>
-                          )}
-                          {activity.expand?.contact_id && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          {activity.expand?.contact && (
                             <div>
                               <span className="text-gray-500">Contact:</span>
-                              <p className="font-medium">{activity.expand.contact_id.name}</p>
+                              <p className="font-medium">{activity.expand.contact.name}</p>
                             </div>
                           )}
-                          {activity.expand?.user_id && (
+                          {activity.expand?.pic && (
                             <div>
                               <span className="text-gray-500">Logged by:</span>
-                              <p className="font-medium">{activity.expand.user_id.name || activity.expand.user_id.email}</p>
+                              <p className="font-medium">{activity.expand.pic.name || activity.expand.pic.email}</p>
                             </div>
                           )}
                         </div>

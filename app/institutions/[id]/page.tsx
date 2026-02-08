@@ -61,7 +61,7 @@ export default function InstitutionDetailPage() {
 
       // Load contacts
       const contactsData = await pb.collection(Collections.Contacts).getFullList<ContactsExpanded>({
-        filter: `institution_id = '${institutionId}'`,
+        filter: `institution_relation = '${institutionId}'`,
         sort: '-is_primary,-created',
       });
       setContacts(contactsData);
@@ -70,22 +70,24 @@ export default function InstitutionDetailPage() {
       const forecastsData = await pb
         .collection(Collections.Forecasts)
         .getFullList<ForecastsExpanded>({
-          filter: `institution_id = '${institutionId}'`,
-          expand: 'program_id,product_id',
+          filter: `institution = '${institutionId}'`,
+          expand: 'target_program',
           sort: '-created',
         });
       setForecasts(forecastsData);
 
-      // Load activities
+      // Load activities (via contacts from this institution)
       const activitiesData = await pb
         .collection(Collections.Activities)
         .getFullList<ActivitiesExpanded>({
-          filter: `institution_id = '${institutionId}'`,
-          expand: 'user_id,contact_id',
-          sort: '-activity_date',
-          $limit: 10,
+          expand: 'pic,contact',
+          sort: '-date_contacted',
         });
-      setActivities(activitiesData);
+      // Filter activities where contact belongs to this institution
+      const filteredActivities = activitiesData.filter(
+        a => a.expand?.contact?.institution_relation === institutionId
+      );
+      setActivities(filteredActivities);
     } catch (error) {
       console.error('Failed to load institution data:', error);
     } finally {
@@ -334,7 +336,7 @@ export default function InstitutionDetailPage() {
                           <div>
                             <h4 className="font-semibold">{forecast.project_title}</h4>
                             <p className="text-sm text-gray-600 mt-1">
-                              {forecast.expand?.program_id?.name}
+                              {forecast.expand?.target_program?.name}
                             </p>
                             <p className="text-sm font-medium text-blue-600 mt-2">
                               {formatCurrency(forecast.target_amount)}
