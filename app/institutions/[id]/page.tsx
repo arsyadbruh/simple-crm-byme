@@ -17,14 +17,14 @@ import { Badge } from '@/components/ui/badge';
 import {
   Building2,
   MapPin,
-  Phone,
-  Mail,
   Globe,
   Edit,
   Plus,
   Users,
   Target,
   History,
+  Trash2,
+  ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -95,6 +95,19 @@ export default function InstitutionDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!institution) return;
+    const confirmed = window.confirm(`Delete institution "${institution.name || 'Untitled'}"?`);
+    if (!confirmed) return;
+
+    try {
+      await pb.collection(Collections.Institutions).delete(institution.id);
+      router.push('/institutions');
+    } catch (error) {
+      console.error('Failed to delete institution:', error);
+    }
+  };
+
   if (isLoading || !user || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -140,13 +153,26 @@ export default function InstitutionDetailPage() {
   };
 
   const totalPipeline = forecasts.reduce((sum, f) => {
-    if (f.status === 'Closed Won') {
-      return sum + (f.fix_omset || f.target_amount);
-    } else if (f.status !== 'Closed Lost') {
-      return sum + f.target_amount;
+    if (f.status === 'Closing') {
+      return sum + (f.fix_omset || f.target_omset || 0);
     }
-    return sum;
+    if (f.status === 'Cancel') {
+      return sum;
+    }
+    return sum + (f.target_omset || 0);
   }, 0);
+
+  const getForecastStatusColor = (status?: ForecastsExpanded['status']) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
+    const colors: Record<NonNullable<ForecastsExpanded['status']>, string> = {
+      Cold: 'bg-gray-100 text-gray-800',
+      Warm: 'bg-blue-100 text-blue-800',
+      Hot: 'bg-yellow-100 text-yellow-800',
+      Closing: 'bg-green-100 text-green-800',
+      Cancel: 'bg-red-100 text-red-800',
+    };
+    return colors[status];
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -171,10 +197,20 @@ export default function InstitutionDetailPage() {
                 </div>
               </div>
             </div>
-            <Button onClick={() => router.push(`/institutions/${institution.id}/edit`)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => router.push('/institutions')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <Button variant="outline" onClick={() => router.push(`/institutions/${institution.id}/edit`)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -192,27 +228,12 @@ export default function InstitutionDetailPage() {
                     <MapPin className="h-4 w-4 text-gray-500 mt-1" />
                     <div>
                       <p className="text-sm">{institution.address}</p>
-                      {(institution.city || institution.province) && (
+                      {institution.city && (
                         <p className="text-sm text-gray-600">
                           {institution.city}
-                          {institution.province && `, ${institution.province}`}
                         </p>
                       )}
                     </div>
-                  </div>
-                )}
-                {institution.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm">{institution.phone}</span>
-                  </div>
-                )}
-                {institution.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    <a href={`mailto:${institution.email}`} className="text-sm text-blue-600 hover:underline">
-                      {institution.email}
-                    </a>
                   </div>
                 )}
                 {institution.website && (
@@ -231,18 +252,6 @@ export default function InstitutionDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Notes */}
-            {institution.notes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{institution.notes}</p>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Quick Stats */}
             <Card>
               <CardHeader>
@@ -255,7 +264,7 @@ export default function InstitutionDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Active Forecasts</span>
-                  <span className="font-semibold">{forecasts.filter(f => f.status !== 'Closed Lost').length}</span>
+                  <span className="font-semibold">{forecasts.filter(f => f.status !== 'Cancel').length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Contacts</span>
@@ -294,8 +303,8 @@ export default function InstitutionDetailPage() {
                                 <Badge variant="outline" className="text-xs">Primary</Badge>
                               )}
                             </div>
-                            {contact.job_title && (
-                              <p className="text-sm text-gray-600">{contact.job_title}</p>
+                            {contact.position && (
+                              <p className="text-sm text-gray-600">{contact.position}</p>
                             )}
                             <div className="mt-2 space-y-1">
                               {contact.phone && (
@@ -334,20 +343,16 @@ export default function InstitutionDetailPage() {
                       <div key={forecast.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-semibold">{forecast.project_title}</h4>
+                            <h4 className="font-semibold">{forecast.target_proposal || '(No Title)'}</h4>
                             <p className="text-sm text-gray-600 mt-1">
                               {forecast.expand?.target_program?.name}
                             </p>
                             <p className="text-sm font-medium text-blue-600 mt-2">
-                              {formatCurrency(forecast.target_amount)}
+                              {formatCurrency(forecast.target_omset || 0)}
                             </p>
                           </div>
-                          <Badge className={`${
-                            forecast.status === 'Closed Won' ? 'bg-green-100 text-green-800' :
-                            forecast.status === 'Closed Lost' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {forecast.status}
+                          <Badge className={getForecastStatusColor(forecast.status)}>
+                            {forecast.status || 'Cold'}
                           </Badge>
                         </div>
                       </div>
@@ -375,15 +380,17 @@ export default function InstitutionDetailPage() {
                         <div className="flex-shrink-0 w-2 h-2 rounded-full bg-indigo-600 mt-2"></div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-sm">{activity.subject}</h4>
+                            <h4 className="font-medium text-sm">{activity.summary || '(No Summary)'}</h4>
                             <span className="text-xs text-gray-500">
-                              {new Date(activity.activity_date).toLocaleDateString()}
+                              {activity.date_contacted
+                                ? new Date(activity.date_contacted).toLocaleDateString()
+                                : '-'}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{activity.activity_type}</p>
-                          {activity.expand?.contact_id && (
+                          <p className="text-sm text-gray-600 mt-1">{activity.type || '-'}</p>
+                          {activity.expand?.contact && (
                             <p className="text-xs text-gray-500 mt-1">
-                              with {activity.expand.contact_id.name}
+                              with {activity.expand.contact.name}
                             </p>
                           )}
                         </div>

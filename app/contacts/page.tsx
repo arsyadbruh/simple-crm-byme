@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Users, Search, Phone, Mail, Building2 } from 'lucide-react';
+import { Plus, Users, Search, Phone, Mail, Building2, Pencil, Trash2 } from 'lucide-react';
+import { ContactFormDialog } from '@/components/contact-form-dialog';
 
 export default function ContactsPage() {
   const { user, isLoading } = useAuth();
@@ -19,6 +20,8 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<ContactsExpanded | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -53,6 +56,29 @@ export default function ContactsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (contact: ContactsExpanded) => {
+    setEditingContact(contact);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (contact: ContactsExpanded) => {
+    const confirmed = window.confirm(`Delete contact "${contact.name || 'Untitled'}"?`);
+    if (!confirmed) return;
+
+    try {
+      await pb.collection(Collections.Contacts).delete(contact.id);
+      loadContacts();
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+    }
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingContact(null);
+    loadContacts();
   };
 
   if (isLoading || !user) {
@@ -104,7 +130,7 @@ export default function ContactsPage() {
             >
               Cards
             </Button>
-            <Button>
+            <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Contact
             </Button>
@@ -142,7 +168,7 @@ export default function ContactsPage() {
                 {searchQuery ? 'Try adjusting your search' : 'Get started by adding your first contact'}
               </p>
               {!searchQuery && (
-                <Button>
+                <Button onClick={() => setIsFormOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Contact
                 </Button>
@@ -160,6 +186,7 @@ export default function ContactsPage() {
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Email</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Phone</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Primary</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -180,6 +207,18 @@ export default function ContactsPage() {
                       ) : (
                         <span className="text-gray-500">-</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(contact)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(contact)}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -229,12 +268,28 @@ export default function ContactsPage() {
                       </div>
                     </div>
                   )}
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(contact)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(contact)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
       </main>
+
+      <ContactFormDialog
+        open={isFormOpen}
+        onClose={handleFormClose}
+        contact={editingContact}
+      />
     </div>
   );
 }
