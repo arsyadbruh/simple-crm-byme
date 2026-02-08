@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, DollarSign, Building2, TrendingUp } from "lucide-react";
+import { Plus, DollarSign, Building2 } from "lucide-react";
 import Link from "next/link";
 import pb from "@/lib/pocketbase";
 

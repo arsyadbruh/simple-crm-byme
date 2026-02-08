@@ -14,7 +14,7 @@ A modern Customer Relationship Management (CRM) application built with Next.js, 
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: Shadcn/UI
 - **Backend**: PocketBase SDK
