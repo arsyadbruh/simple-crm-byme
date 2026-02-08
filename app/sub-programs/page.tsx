@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FolderTree, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, FolderTree, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
 const emptyForm = {
   name: '',
@@ -223,6 +223,14 @@ export default function SubProgramsPage() {
                     {subProgram.expand?.program_relation?.name || '-'}
                   </div>
                   <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => router.push(`/sub-programs/${subProgram.id}`)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => openEditDialog(subProgram)}>
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit

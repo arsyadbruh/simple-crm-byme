@@ -48,8 +48,6 @@ export function Navigation() {
   const [mobilePeopleMenuOpen, setMobilePeopleMenuOpen] = useState(false);
   const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false);
 
-  const displayName = user.username?.trim() || 'User';
-
   const isGroupActive = (items: { href: string }[]) =>
     items.some((item) => pathname === item.href || pathname?.startsWith(item.href + '/'));
 
@@ -60,6 +58,8 @@ export function Navigation() {
   };
 
   if (!user) return null;
+
+  const displayName = user.username?.trim() || 'User';
 
   return (
     <nav className="bg-white shadow-sm border-b">

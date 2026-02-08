@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Layers, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, Layers, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
 const segmentOptions = ['CSR', 'Yayasan', 'Pemerintah', 'Sekolah', 'Other'] as const;
 
@@ -240,6 +240,14 @@ export default function ProgramsPage() {
                     </div>
                   )}
                   <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => router.push(`/programs/${program.id}`)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => openEditDialog(program)}>
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit

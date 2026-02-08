@@ -93,6 +93,7 @@ export type TargetWeek = 'Pekan 1' | 'Pekan 2' | 'Pekan 3' | 'Pekan 4' | 'Pekan5
 
 export interface ForecastsRecord extends BaseRecord {
   target_program: string; // Required relation to programs
+  target_sub_program?: string; // Optional relation to sub programs
   institution: string; // Required relation to institutions
   target_year?: string;
   target_month?: TargetMonth;
@@ -109,6 +110,7 @@ export interface ForecastsRecord extends BaseRecord {
 export interface ForecastsExpanded extends ForecastsRecord {
   expand?: {
     target_program?: ProgramsRecord;
+    target_sub_program?: SubProgramsRecord;
     institution?: InstitutionsRecord;
     pic?: UsersRecord;
   };
@@ -168,6 +170,7 @@ export interface ForecastFilters {
   status?: ForecastStatus;
   target_month?: TargetMonth;
   target_program?: string;
+  target_sub_program?: string;
 }
 
 export interface ActivityFilters {

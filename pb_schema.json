@@ -27,13 +27,15 @@
     "updateRule": "id = @request.auth.id || @request.auth.role = 'Admin'",
     "deleteRule": "id = @request.auth.id || @request.auth.role = 'Admin'",
     "options": {
-      "allowEmailAuth": false,
+      "allowEmailAuth": true,
       "allowOAuth2Auth": false,
       "allowUsernameAuth": false,
       "exceptEmailDomains": null,
       "manageRule": null,
-      "minPasswordLength": 0,
-      "onlyEmailDomains": null,
+      "minPasswordLength": 6,
+      "onlyEmailDomains": [
+        "kpi-indonesia.org"
+      ],
       "onlyVerified": false,
       "requireEmail": false
     }
@@ -548,6 +550,22 @@
         "unique": false,
         "options": {
           "convertUrls": false
+        }
+      },
+      {
+        "system": false,
+        "id": "wddnqum8",
+        "name": "target_sub_program",
+        "type": "relation",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "master_subprog00",
+          "cascadeDelete": false,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": null
         }
       }
     ],
