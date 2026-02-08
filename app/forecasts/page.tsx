@@ -30,6 +30,7 @@ export default function ForecastsPage() {
   const [editingForecast, setEditingForecast] = useState<ForecastsExpanded | null>(null);
   const [closingForecast, setClosingForecast] = useState<ForecastsExpanded | null>(null);
   const [statusFilter, setStatusFilter] = useState<ForecastStatus | 'All'>('All');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -42,6 +43,14 @@ export default function ForecastsPage() {
       loadForecasts();
     }
   }, [user, statusFilter]);
+
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem(`crm:view:forecasts:${user.id}`);
+    if (stored === 'card' || stored === 'table') {
+      setViewMode(stored);
+    }
+  }, [user]);
 
   const loadForecasts = async () => {
     try {
@@ -85,6 +94,13 @@ export default function ForecastsPage() {
     loadForecasts();
   };
 
+  const handleViewModeChange = (mode: 'card' | 'table') => {
+    setViewMode(mode);
+    if (user) {
+      localStorage.setItem(`crm:view:forecasts:${user.id}`, mode);
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -126,10 +142,26 @@ export default function ForecastsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Forecasts</h1>
             <p className="text-gray-600 mt-2">Manage your sales forecasts and deals</p>
           </div>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Forecast
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleViewModeChange('table')}
+            >
+              Table
+            </Button>
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleViewModeChange('card')}
+            >
+              Cards
+            </Button>
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Forecast
+            </Button>
+          </div>
         </div>
 
         {/* Status Filter */}
@@ -168,6 +200,69 @@ export default function ForecastsPage() {
               </Button>
             </CardContent>
           </Card>
+        ) : viewMode === 'table' ? (
+          <div className="overflow-x-auto rounded-lg border bg-white">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Proposal</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Institution</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Program</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Target Month</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Target Omset</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {forecasts.map((forecast) => (
+                  <tr key={forecast.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">
+                        {forecast.target_proposal || '(No Title)'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {forecast.expand?.institution?.name || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {forecast.expand?.target_program?.name || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{forecast.target_month}</td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {formatCurrency(forecast.target_omset || 0)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={getStatusColor(forecast.status || 'Cold')}>
+                        {forecast.status || 'Cold'}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(forecast)}
+                        >
+                          Edit
+                        </Button>
+                        {forecast.status && !['Closing', 'Cancel'].includes(forecast.status) && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleClose(forecast)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Close Deal
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="space-y-4">
             {forecasts.map((forecast) => (
@@ -183,7 +278,6 @@ export default function ForecastsPage() {
                           {forecast.status || 'Cold'}
                         </Badge>
                       </div>
-                      
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                         <div>
                           <p className="text-sm text-gray-500">Institution</p>
