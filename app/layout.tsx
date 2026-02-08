@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ReactQueryProvider } from "@/lib/react-query-provider";
+import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata: Metadata = {
-  title: "Simple CRM",
-  description: "A simple CRM application built with Next.js and PocketBase",
+  title: "CRM & Forecasting System",
+  description: "Account-Based CRM & Forecasting System for B2B/Education",
 };
 
 export default function RootLayout({
@@ -13,7 +15,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-gray-50">
+        <ReactQueryProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ReactQueryProvider>
+      </body>
     </html>
   );
 }

@@ -1,188 +1,170 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Mail, Phone, Building2 } from "lucide-react";
-import Link from "next/link";
-import pb from "@/lib/pocketbase";
-
-interface Contact {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-}
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { Navigation } from '@/components/navigation';
+import pb, { Collections } from '@/lib/pocketbase';
+import type { ContactsExpanded } from '@/lib/pocketbase-types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Plus, Users, Search, Phone, Mail, Building2 } from 'lucide-react';
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-  });
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const [contacts, setContacts] = useState<ContactsExpanded[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadContacts();
-  }, []);
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
 
-  async function loadContacts() {
+  useEffect(() => {
+    if (user) {
+      loadContacts();
+    }
+  }, [user]);
+
+  const loadContacts = async () => {
     try {
-      const records = await pb.collection('contacts').getFullList<Contact>({
+      setLoading(true);
+      const records = await pb.collection(Collections.Contacts).getFullList<ContactsExpanded>({
+        expand: 'institution_id',
         sort: '-created',
       });
       setContacts(records);
     } catch (error) {
-      console.error('Error loading contacts:', error);
+      console.error('Failed to load contacts:', error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      await pb.collection('contacts').create(formData);
-      setFormData({ name: "", email: "", phone: "", company: "" });
-      setIsFormOpen(false);
-      loadContacts();
-    } catch (error) {
-      console.error('Error creating contact:', error);
-      alert('Error creating contact. Make sure PocketBase is running and the contacts collection exists.');
-    }
-  }
+  const filteredContacts = contacts.filter((contact) =>
+    contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.expand?.institution_id?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Simple CRM</h1>
-            <nav className="flex gap-4">
-              <Link href="/">
-                <Button variant="ghost">Dashboard</Button>
-              </Link>
-              <Link href="/contacts">
-                <Button variant="ghost">Contacts</Button>
-              </Link>
-              <Link href="/companies">
-                <Button variant="ghost">Companies</Button>
-              </Link>
-              <Link href="/deals">
-                <Button variant="ghost">Deals</Button>
-              </Link>
-            </nav>
+      <Navigation />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
+            <p className="text-gray-600 mt-2">Manage your contacts and decision makers</p>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold">Contacts</h2>
-          <Button onClick={() => setIsFormOpen(!isFormOpen)}>
+          <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add Contact
+            New Contact
           </Button>
         </div>
 
-        {/* Add Contact Form */}
-        {isFormOpen && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>New Contact</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Name</label>
-                  <Input
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Email</label>
-                  <Input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="john@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Phone</label>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+1234567890"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Company</label>
-                  <Input
-                    value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    placeholder="Acme Inc"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button type="submit">Create Contact</Button>
-                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+        {/* Search */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by name, email, job title, or institution..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : filteredContacts.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {searchQuery ? 'No contacts found' : 'No contacts yet'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {searchQuery ? 'Try adjusting your search' : 'Get started by adding your first contact'}
+              </p>
+              {!searchQuery && (
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Contact
+                </Button>
+              )}
             </CardContent>
           </Card>
-        )}
-
-        {/* Contacts List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {contacts.length === 0 ? (
-            <Card className="col-span-full">
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">
-                  No contacts yet. Click "Add Contact" to create your first contact.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            contacts.map((contact) => (
-              <Card key={contact.id}>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredContacts.map((contact) => (
+              <Card key={contact.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle className="text-lg">{contact.name}</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg mb-1">{contact.name}</CardTitle>
+                      {contact.is_primary && (
+                        <Badge variant="outline" className="text-xs mb-2">Primary Contact</Badge>
+                      )}
+                      {contact.job_title && (
+                        <p className="text-sm text-gray-600 mt-1">{contact.job_title}</p>
+                      )}
+                    </div>
+                    <Users className="h-6 w-6 text-indigo-600" />
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {contact.email && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4 mr-2" />
-                      {contact.email}
-                    </div>
-                  )}
-                  {contact.phone && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4 mr-2" />
-                      {contact.phone}
-                    </div>
-                  )}
-                  {contact.company && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Building2 className="h-4 w-4 mr-2" />
-                      {contact.company}
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    {contact.phone && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Phone className="h-4 w-4 mr-2" />
+                        {contact.phone}
+                      </div>
+                    )}
+                    {contact.email && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Mail className="h-4 w-4 mr-2" />
+                        {contact.email}
+                      </div>
+                    )}
+                  </div>
+                  {contact.expand?.institution_id && (
+                    <div className="pt-3 border-t">
+                      <div className="flex items-center text-sm">
+                        <Building2 className="h-4 w-4 mr-2 text-gray-500" />
+                        <span className="text-gray-700 font-medium">
+                          {contact.expand.institution_id.name}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
