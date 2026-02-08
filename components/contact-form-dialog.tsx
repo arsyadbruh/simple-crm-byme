@@ -25,12 +25,20 @@ import {
 interface ContactFormDialogProps {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   contact?: ContactsExpanded | null;
+  defaultInstitutionId?: string;
 }
 
 const STATUS_OPTIONS: NonNullable<ContactsRecord['status']>[] = ['Active', 'Non Active'];
 
-export function ContactFormDialog({ open, onClose, contact }: ContactFormDialogProps) {
+export function ContactFormDialog({
+  open,
+  onClose,
+  onSaved,
+  contact,
+  defaultInstitutionId,
+}: ContactFormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [institutions, setInstitutions] = useState<InstitutionsRecord[]>([]);
   const [formData, setFormData] = useState({
@@ -63,11 +71,11 @@ export function ContactFormDialog({ open, onClose, contact }: ContactFormDialogP
         email: '',
         phone: '',
         status: '',
-        institution_relation: '',
+        institution_relation: defaultInstitutionId || '',
         is_primary: false,
       });
     }
-  }, [open, contact]);
+  }, [open, contact, defaultInstitutionId]);
 
   const loadInstitutions = async () => {
     try {
@@ -111,6 +119,7 @@ export function ContactFormDialog({ open, onClose, contact }: ContactFormDialogP
       }
 
       alert(contact ? 'Kontak berhasil diupdate!' : 'Kontak berhasil dibuat!');
+      onSaved?.();
       onClose();
     } catch (error: any) {
       console.error('Failed to save contact:', error);

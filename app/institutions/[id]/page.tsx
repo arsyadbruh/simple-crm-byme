@@ -14,6 +14,7 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ContactFormDialog } from '@/components/contact-form-dialog';
 import {
   Building2,
   MapPin,
@@ -37,6 +38,7 @@ export default function InstitutionDetailPage() {
   const [forecasts, setForecasts] = useState<ForecastsExpanded[]>([]);
   const [activities, setActivities] = useState<ActivitiesExpanded[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -283,7 +285,7 @@ export default function InstitutionDetailPage() {
                   <Users className="h-5 w-5" />
                   Contacts ({contacts.length})
                 </CardTitle>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={() => setContactDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Contact
                 </Button>
@@ -403,6 +405,13 @@ export default function InstitutionDetailPage() {
           </div>
         </div>
       </main>
+
+      <ContactFormDialog
+        open={contactDialogOpen}
+        onClose={() => setContactDialogOpen(false)}
+        onSaved={loadInstitutionData}
+        defaultInstitutionId={institution.id}
+      />
     </div>
   );
 }
