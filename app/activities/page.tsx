@@ -9,7 +9,7 @@ import type { ActivitiesExpanded, ActivityType } from '@/lib/pocketbase-types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, History, Phone, Users as UsersIcon, Mail, MessageCircle, Calendar } from 'lucide-react';
+import { Plus, History, Phone, Users as UsersIcon, MessageCircle, Calendar } from 'lucide-react';
 
 export default function ActivitiesPage() {
   const { user, isLoading } = useAuth();
@@ -34,12 +34,12 @@ export default function ActivitiesPage() {
     try {
       setLoading(true);
       
-      const filter = filterType !== 'All' ? `activity_type = '${filterType}'` : '';
+      const filter = filterType !== 'All' ? `type = '${filterType}'` : '';
       
       const records = await pb.collection(Collections.Activities).getFullList<ActivitiesExpanded>({
         filter,
         expand: 'pic,contact,target_forecast',
-        sort: '-activity_date',
+        sort: '-date_contacted',
       });
       setActivities(records);
     } catch (error) {
@@ -60,16 +60,15 @@ export default function ActivitiesPage() {
     );
   }
 
-  const activityTypes: (ActivityType | 'All')[] = ['All', 'Call', 'Visit', 'Meeting', 'Email', 'WhatsApp', 'Other'];
+  const activityTypes: (ActivityType | 'All')[] = ['All', 'Call', 'Visit', 'Meeting', 'Demo', 'WhatsApp'];
 
   const getActivityIcon = (type: ActivityType) => {
     const icons = {
       'Call': Phone,
       'Visit': UsersIcon,
       'Meeting': Calendar,
-      'Email': Mail,
+      'Demo': History,
       'WhatsApp': MessageCircle,
-      'Other': History,
     };
     return icons[type] || History;
   };
@@ -79,7 +78,7 @@ export default function ActivitiesPage() {
       'Call': 'bg-blue-100 text-blue-800',
       'Visit': 'bg-green-100 text-green-800',
       'Meeting': 'bg-purple-100 text-purple-800',
-      'Email': 'bg-yellow-100 text-yellow-800',
+      'Demo': 'bg-yellow-100 text-yellow-800',
       'WhatsApp': 'bg-emerald-100 text-emerald-800',
       'Other': 'bg-gray-100 text-gray-800',
     };
@@ -140,33 +139,38 @@ export default function ActivitiesPage() {
         ) : (
           <div className="space-y-4">
             {activities.map((activity) => {
-              const Icon = getActivityIcon(activity.activity_type);
+              const activityType = activity.type || 'Call';
+              const Icon = getActivityIcon(activityType);
               return (
                 <Card key={activity.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-full ${getActivityColor(activity.activity_type)}`}>
+                      <div className={`p-3 rounded-full ${getActivityColor(activityType)}`}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h3 className="font-semibold text-lg">{activity.subject}</h3>
-                            <Badge className={getActivityColor(activity.activity_type)}>
-                              {activity.activity_type}
+                            <h3 className="font-semibold text-lg">
+                              {activity.summary || activity.outcome || 'Activity'}
+                            </h3>
+                            <Badge className={getActivityColor(activityType)}>
+                              {activityType}
                             </Badge>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {new Date(activity.activity_date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
+                          {activity.date_contacted && (
+                            <span className="text-sm text-gray-500">
+                              {new Date(activity.date_contacted).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          )}
                         </div>
                         
-                        {activity.description && (
-                          <p className="text-gray-700 mb-3">{activity.description}</p>
+                        {activity.details && (
+                          <p className="text-gray-700 mb-3">{activity.details}</p>
                         )}
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
