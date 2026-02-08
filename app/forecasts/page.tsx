@@ -16,7 +16,7 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Target, Filter } from 'lucide-react';
+import { Plus, Target, Filter, Trash2 } from 'lucide-react';
 import { ForecastFormDialog } from '@/components/forecast-form-dialog';
 import { CloseForecastDialog } from '@/components/close-forecast-dialog';
 
@@ -60,7 +60,7 @@ export default function ForecastsPage() {
       
       const records = await pb.collection(Collections.Forecasts).getFullList<ForecastsExpanded>({
         filter,
-        expand: 'user_id,institution_id,program_id,sub_program_id,product_id',
+        expand: 'institution,target_program,target_sub_program,pic',
         sort: '-created',
       });
 
@@ -80,6 +80,18 @@ export default function ForecastsPage() {
   const handleClose = (forecast: ForecastsExpanded) => {
     setClosingForecast(forecast);
     setIsCloseDialogOpen(true);
+  };
+
+  const handleDelete = async (forecast: ForecastsExpanded) => {
+    const confirmed = window.confirm(`Delete forecast "${forecast.target_proposal || 'Untitled'}"?`);
+    if (!confirmed) return;
+
+    try {
+      await pb.collection(Collections.Forecasts).delete(forecast.id);
+      loadForecasts();
+    } catch (error) {
+      console.error('Failed to delete forecast:', error);
+    }
   };
 
   const handleFormClose = () => {
@@ -246,6 +258,14 @@ export default function ForecastsPage() {
                         >
                           Edit
                         </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(forecast)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
                         {forecast.status && !['Closing', 'Cancel'].includes(forecast.status) && (
                           <Button
                             variant="default"
@@ -325,6 +345,14 @@ export default function ForecastsPage() {
                         onClick={() => handleEdit(forecast)}
                       >
                         Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(forecast)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
                       </Button>
                       {forecast.status && !['Closing', 'Cancel'].includes(forecast.status) && (
                         <Button

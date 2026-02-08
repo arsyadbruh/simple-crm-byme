@@ -9,7 +9,8 @@ import type { ActivitiesExpanded, ActivityType } from '@/lib/pocketbase-types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, History, Phone, Users as UsersIcon, MessageCircle, Calendar } from 'lucide-react';
+import { Plus, History, Phone, Users as UsersIcon, MessageCircle, Calendar, Pencil, Trash2 } from 'lucide-react';
+import { ActivityFormDialog } from '@/components/activity-form-dialog';
 
 export default function ActivitiesPage() {
   const { user, isLoading } = useAuth();
@@ -18,6 +19,8 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<ActivityType | 'All'>('All');
   const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<ActivitiesExpanded | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -56,6 +59,29 @@ export default function ActivitiesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (activity: ActivitiesExpanded) => {
+    setEditingActivity(activity);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (activity: ActivitiesExpanded) => {
+    const confirmed = window.confirm(`Delete activity "${activity.summary || activity.outcome || 'Untitled'}"?`);
+    if (!confirmed) return;
+
+    try {
+      await pb.collection(Collections.Activities).delete(activity.id);
+      loadActivities();
+    } catch (error) {
+      console.error('Failed to delete activity:', error);
+    }
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingActivity(null);
+    loadActivities();
   };
 
   if (isLoading || !user) {
@@ -125,7 +151,7 @@ export default function ActivitiesPage() {
             >
               Cards
             </Button>
-            <Button>
+            <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Log Activity
             </Button>
@@ -162,7 +188,7 @@ export default function ActivitiesPage() {
               <History className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No activities found</h3>
               <p className="text-gray-600 mb-4">Start logging your CRM activities</p>
-              <Button>
+              <Button onClick={() => setIsFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Log Activity
               </Button>
@@ -179,6 +205,7 @@ export default function ActivitiesPage() {
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Contact</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Logged By</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Next Action</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -219,6 +246,18 @@ export default function ActivitiesPage() {
                         {activity.expand?.pic?.name || activity.expand?.pic?.email || '-'}
                       </td>
                       <td className="px-4 py-3 text-gray-700">{nextAction}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(activity)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleDelete(activity)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -282,6 +321,16 @@ export default function ActivitiesPage() {
                             </p>
                           </div>
                         )}
+                        <div className="flex gap-2 pt-4">
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(activity)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleDelete(activity)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -291,6 +340,12 @@ export default function ActivitiesPage() {
           </div>
         )}
       </main>
+
+      <ActivityFormDialog
+        open={isFormOpen}
+        onClose={handleFormClose}
+        activity={editingActivity}
+      />
     </div>
   );
 }
