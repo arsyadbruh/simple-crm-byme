@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check if user is already authenticated
     const checkAuth = () => {
       if (pb.authStore.isValid) {
-        setUser(pb.authStore.model as UsersRecord);
+        setUser(pb.authStore.model as unknown as UsersRecord);
       }
       setIsLoading(false);
     };
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const unsubscribe = pb.authStore.onChange((token, model) => {
-      setUser(model as UsersRecord | null);
+      setUser(model as unknown as UsersRecord | null);
     });
 
     return () => {
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const authData = await pb.collection('users').authWithPassword(email, password);
-      setUser(authData.record as UsersRecord);
+      setUser(authData.record as unknown as UsersRecord);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
